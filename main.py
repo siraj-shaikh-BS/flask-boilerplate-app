@@ -8,4 +8,4 @@ application = create_app()
 
 
 if __name__ == '__main__':
-    application.run(host='0.0.0.0')  # type: ignore  # noqa: attribute-error
+    application.run(debug=True)  # type: ignore  # noqa: attribute-error

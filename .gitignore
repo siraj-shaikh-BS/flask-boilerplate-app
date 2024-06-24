@@ -162,3 +162,5 @@ cython_debug/
 #.idea/
 
 redis-6.0.6/
+
+*.zip

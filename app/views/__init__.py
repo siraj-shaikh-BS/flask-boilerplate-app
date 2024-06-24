@@ -2,6 +2,7 @@
 from app.views.common_view import AuditView
 from app.views.common_view import FileView
 from app.views.user_view import UserView
+from app.views.student_view import StudentsView,StudentView
 from flask import Blueprint
 from flask import g
 from flask import request
@@ -35,3 +36,13 @@ v1_blueprints.add_url_rule(
     '/log/audit', view_func=AuditView.list, methods=['GET'])
 v1_blueprints.add_url_rule(
     '/log/audit-detail', view_func=AuditView.details, methods=['GET'])
+v1_blueprints.add_url_rule(
+    '/student/get', view_func=StudentsView.get_students, methods=['GET'])
+v1_blueprints.add_url_rule(
+    'student/get/<int:sid>', view_func=StudentsView.get_student_by_id, methods=['GET'])
+v1_blueprints.add_url_rule(
+    'student/post', view_func=StudentsView.add_student, methods=['POST'])
+v1_blueprints.add_url_rule(
+    'student/put/<int:sid>', view_func=StudentsView.update_student_by_id, methods=['PUT'])
+v1_blueprints.add_url_rule(
+    'student/delete/<int:sid>', view_func=StudentsView.delete_student_by_id, methods=['DELETE'])

@@ -17,6 +17,7 @@ Flask-Limiter==3.3.1
 Flask-Mail==0.9.1
 Flask-Migrate==2.6.0
 Flask-Script==2.0.5
+flask-restful
 Flask-SQLAlchemy==2.5.1
 flask-swagger-ui==4.11.1
 freezegun==1.2.2
