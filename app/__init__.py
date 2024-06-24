@@ -11,7 +11,8 @@ from app.helpers.constants import QueueName
 from app.helpers.constants import ResponseMessageKeys
 import boto3
 from botocore.client import Config
-from flask import Flask
+from flask import Flask,request
+from flask_restful import Resource,Api
 from flask import jsonify
 from flask_limiter import Limiter
 from flask_limiter import RequestLimit
@@ -89,7 +90,21 @@ def create_app():
         #     'SQLALCHEMY_DATABASE_URI': config_data.get('SQLALCHEMY_TEST_DATABASE_URI')
         #     })
         # Global error handler for error code 429 (Too Many Requests)
+        
+
         application.register_error_handler(429, ratelimit_handler)  # type: ignore  # noqa: FKA100
+        db.init_app(application)
+        Migrate(app=application, db=db, compare_type=True)
+
+        r = redis.Redis(host=config_data.get('REDIS').get('HOST'), port=config_data.get(
+                'REDIS').get('PORT'), db=config_data.get('REDIS').get('DB'))
+        send_mail_q = Queue(QueueName.SEND_MAIL, connection=r)
+
+        limiter = Limiter(app=application, key_func=None, strategy=config_data.get('STRATEGY'),  # Creating instance of Flask-Limiter for rate limiting.
+                  key_prefix=config_data.get('KEY_PREFIX'), storage_uri='redis://{}:{}/{}'.format(
+                config_data.get('REDIS').get('HOST'), config_data.get('REDIS').get('PORT'), config_data.get('RATE_LIMIT').get('REDIS_DB')))
+
+
         app_set_configurations(application=application,
                                config_data=config_data)
         initialize_extensions(application)
@@ -138,11 +153,10 @@ def register_blueprints(application):
             output += '\t> Error at function %s\n' % (affected)
             output += '\t  At: {}:{}\n'.format(file, linenumber)
             output += '\t  Source: %s\n' % (line)
-        output += '\t> Exception: %s\n' % (exception_error)
+        output += f'\t> Exception: {exception_error}\n'
         logger.error('Exception Stack Trace')
         logger.error(output)
         logger.error('=========END=========')
-
 
 def register_swagger_blueprints(application):
     """
@@ -179,6 +193,8 @@ def app_set_configurations(application, config_data):
                      + str(exception_error))
 
 
+r = redis.Redis(host=config_data.get('REDIS').get('HOST'), port=config_data.get(
+                'REDIS').get('PORT'), db=config_data.get('REDIS').get('DB'))
 def clear_scheduler():
     """ Method to delete scheduled jobs in scheduler. """
     scheduler = Scheduler(connection=r)
@@ -186,18 +202,61 @@ def clear_scheduler():
         scheduler.cancel(job)
 
 
-app = Flask(__name__)
-app_set_configurations(application=app, config_data=config_data)
-db = SQLAlchemy(app, session_options={'expire_on_commit': False})
-migrate = Migrate(app=app, db=db, compare_type=True)
+application = Flask(__name__)
+api=Api(application)
+# app_set_configurations(application=app, config_data=config_data)
+db = SQLAlchemy(app=application,session_options={'expire_on_commit': False})
+# migrate = Migrate(app=app, db=db, compare_type=True)
 
 
+# class SMS(db.Model):
+#     sid=db.Column(db.Integer,primary_key=True)
+#     name=db.Column(db.String,nullable=False)
+#     clas=db.Column(db.Integer,nullable=False)
+#     division=db.Column(db.String,nullable=False)
+
+#     def __repr__(self):
+#         return f"{self.name}:{self.clas}-{self.division}"
+
+# Students class
+# class Students(Resource):
+#     def get(self):
+#         students=SMS.query.all()
+#         return [str(student) for student in students]
+
+#     def post(self):
+#         data=request.json
+
+    
+# class Student(Resource):
+#     def get(self,sid):
+#         return 
+
+#     def put(self,sid):
+#         data=request.json
+    
+#     def delete(self,sid):
+#         # del
+#         return 
+
+
+# class HelloWorld(Resource):
+#     def get(self):
+#         return {'message': 'Hello, World!'}
+
+# api.add_resource(HelloWorld, '/hello')
+# api.add_resource(Students, '/students')
+# api.add_resource(Student, '/student/<int:sid>')
+
+
+
+# # Create resources for students and student classes
+# api.add_resource(Students,'/')
+# api.add_resource(Student,'/<int:sid>')
 
 
 # CORS(app, resources={r'/api/*': {'origins': '*'}})
-r = redis.Redis(host=config_data.get('REDIS').get('HOST'), port=config_data.get(
-    'REDIS').get('PORT'), db=config_data.get('REDIS').get('DB'))
-send_mail_q = Queue(QueueName.SEND_MAIL, connection=r)
+
 
 
 
@@ -205,6 +264,6 @@ send_mail_q = Queue(QueueName.SEND_MAIL, connection=r)
 
 # clear_scheduler()
 
-limiter = Limiter(app=app, key_func=None, strategy=config_data.get('STRATEGY'),  # Creating instance of Flask-Limiter for rate limiting.
-                  key_prefix=config_data.get('KEY_PREFIX'), storage_uri='redis://{}:{}/{}'.format(
-    config_data.get('REDIS').get('HOST'), config_data.get('REDIS').get('PORT'), config_data.get('RATE_LIMIT').get('REDIS_DB')))
+# limiter = Limiter(app=app, key_func=None, strategy=config_data.get('STRATEGY'),  # Creating instance of Flask-Limiter for rate limiting.
+#                   key_prefix=config_data.get('KEY_PREFIX'), storage_uri='redis://{}:{}/{}'.format(
+#     config_data.get('REDIS').get('HOST'), config_data.get('REDIS').get('PORT'), config_data.get('RATE_LIMIT').get('REDIS_DB')))
