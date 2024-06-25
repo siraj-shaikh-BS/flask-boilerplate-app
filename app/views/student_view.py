@@ -14,37 +14,30 @@ from app.helpers.utility import field_type_validator
 from app.helpers.utility import get_pagination_meta
 from app.helpers.utility import required_validator
 from app.helpers.utility import send_json_response
-from app.models.student import Students,SMS,Student
+from app.models.student import SMS
 from flask import request
 from flask.views import View
 import jwt
 from werkzeug.security import check_password_hash
 
 
-class StudentsView(View):
-    """Contains all user related functions"""
-    
+class StudentView(View):
+    """
+    Contains all student related functions
+    """
     @staticmethod
     @api_time_logger
     def get_students():
-        """
-        
-        
-        """
-
-        # print(request)
-        Students_data=Students.get()
-        
-        
-        # import pdb;pdb.set_trace()
-        
-        return Students_data
+        Students_data=SMS.get_student()
+        data=SMS.serialize_student(details=Students_data)
+        return data
+        # return Students_data
 
     @staticmethod
     @api_time_logger
-    def add_student():
+    def add_students():
         
-        students_add=Students.post()
+        students_add=SMS.post()
         return students_add
     
     ## Get student by id
@@ -52,33 +45,33 @@ class StudentsView(View):
     @api_time_logger
     def get_student_by_id(sid):
 
-        Student_data=Student.get(sid)        
+        Student_data=SMS.get_student_by_id(sid)  
         return Student_data
+        # return Student_data
+    
     
     @staticmethod
     @api_time_logger
     def update_student_by_id(sid):
-        updated_student=Student.put(sid)
+        updated_student=SMS.update_student_by_id(sid)
         return updated_student
     
     @staticmethod
     @api_time_logger
     def delete_student_by_id(sid):
-        deleted_student=Student.delete(sid)
-        return deleted_student
-
-class StudentView(View):
-    """Contains all user related functions"""
-
+        deleted_student=SMS.delete_student_by_id(sid)
+        Students_data=SMS.get_student()
+        return Students_data
+    
+    
     @staticmethod
     @api_time_logger
-    def add_student():
+    def search_student():
+        data=request.args
+        query=SMS.search_student_by_name(name=data['name'])
+        data=SMS.serialize_student(details=query)
+        return data
+
         
-        student_add=Student.put()
-        return student_add
-        
-        
-    
-    
-# api.add_resource('/')
+
         

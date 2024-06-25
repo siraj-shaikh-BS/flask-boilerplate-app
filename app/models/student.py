@@ -12,10 +12,16 @@ from sqlalchemy import asc
 from sqlalchemy import desc
 from sqlalchemy.ext import hybrid
 
-
+studentFields={
+    'sid':fields.Integer,
+    'name':fields.String,
+    'clas':fields.Integer,
+    'division':fields.String
+}    
 
 class SMS(db.Model):
-    sid=db.Column(db.Integer,primary_key=True)
+    # __tablename__='SMS Management System'
+    sid=db.Column(db.Integer,primary_key=True,autoincrement=True)
     name=db.Column(db.String,nullable=False)
     clas=db.Column(db.Integer,nullable=False)
     division=db.Column(db.String,nullable=False)
@@ -24,22 +30,13 @@ class SMS(db.Model):
         return f"{self.name}:{self.clas}-{self.division}"
     
     
-    
-studentFields={
-    'sid':fields.Integer,
-    'name':fields.String,
-    'clas':fields.Integer,
-    'division':fields.String
-}    
-
-
-# Students class
-class Students(Resource):
+    @staticmethod
     @marshal_with(studentFields)
-    def get():
+    def get_student():
         students=SMS.query.all()
         return students
     
+    @staticmethod
     @marshal_with(studentFields)
     def post():
         data=request.json
@@ -51,16 +48,31 @@ class Students(Resource):
         
         return students
     
-class Student(Resource):
+    @classmethod
+    def serialize_student(cls,details):
+        data=[]
+        for single_data in details:
+            single_data=dict(single_data)
+            single_data_obj={
+                'sid':single_data['sid'],
+                'name':single_data['name'],
+                'clas':single_data['clas'],
+                'division':single_data['division'],
+            }
+            
+            data.append(single_data_obj)
+        return data
+        
     
+    @staticmethod
     @marshal_with(studentFields)
-    def get(sid):
+    def get_student_by_id(sid):
         student=SMS.query.filter_by(sid=sid).first()
         return student
 
-
+    @staticmethod
     @marshal_with(studentFields)
-    def put(sid):
+    def update_student_by_id(sid):
         data=request.json
         student=SMS.query.filter_by(sid=sid).first()
         # student.id=data['sid']
@@ -72,12 +84,23 @@ class Student(Resource):
         return student
         
     
-    
+    @staticmethod
     @marshal_with(studentFields)
-    def delete(sid):
+    def delete_student_by_id(sid):
         student=SMS.query.filter_by(sid=sid).first()
         db.session.delete(student)
         db.session.commit()
         students=SMS.query.all()
         
         return students
+    
+    @marshal_with(studentFields)
+    def search_student_by_name(name):
+        students=SMS.query.filter(SMS.name.ilike(f"%{name}%")).all()
+        return students
+    
+    
+    
+
+
+
