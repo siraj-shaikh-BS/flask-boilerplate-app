@@ -195,6 +195,7 @@ def app_set_configurations(application, config_data):
 
 r = redis.Redis(host=config_data.get('REDIS').get('HOST'), port=config_data.get(
                 'REDIS').get('PORT'), db=config_data.get('REDIS').get('DB'))
+
 def clear_scheduler():
     """ Method to delete scheduled jobs in scheduler. """
     scheduler = Scheduler(connection=r)
@@ -204,8 +205,8 @@ def clear_scheduler():
 
 application = Flask(__name__)
 api=Api(application)
-# app_set_configurations(application=app, config_data=config_data)
+app_set_configurations(application=application, config_data=config_data)
 db = SQLAlchemy(app=application,session_options={'expire_on_commit': False})
-# migrate = Migrate(app=app, db=db, compare_type=True)
+migrate = Migrate(app=application, db=db, compare_type=True)
 
 

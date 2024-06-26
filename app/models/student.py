@@ -19,8 +19,8 @@ studentFields={
     'division':fields.String
 }    
 
-class SMS(db.Model):
-    # __tablename__='SMS Management System'
+class Student(db.Model):
+    # __tablename__='Student Management System'
     sid=db.Column(db.Integer,primary_key=True,autoincrement=True)
     name=db.Column(db.String,nullable=False)
     clas=db.Column(db.Integer,nullable=False)
@@ -32,19 +32,24 @@ class SMS(db.Model):
     
     @staticmethod
     @marshal_with(studentFields)
-    def get_student():
-        students=SMS.query.all()
+    def get_student(name=None):
+        
+        if name:
+            students=Student.query.filter(Student.name.ilike(f"%{name}%")).all()
+        else:
+            students=Student.query.all()
         return students
+        # return students
     
     @staticmethod
     @marshal_with(studentFields)
-    def post():
+    def add_student():
         data=request.json
-        student=SMS(name=data['name'],clas=data['clas'],division=data['division'])
+        student=Student(name=data['name'],clas=data['clas'],division=data['division'])
         db.session.add(student)
         db.session.commit()
         
-        students=SMS.query.all()
+        students=Student.query.all()
         
         return students
     
@@ -67,14 +72,15 @@ class SMS(db.Model):
     @staticmethod
     @marshal_with(studentFields)
     def get_student_by_id(sid):
-        student=SMS.query.filter_by(sid=sid).first()
+        
+        student=Student.query.filter_by(sid=sid).first()
         return student
 
     @staticmethod
     @marshal_with(studentFields)
     def update_student_by_id(sid):
         data=request.json
-        student=SMS.query.filter_by(sid=sid).first()
+        student=Student.query.filter_by(sid=sid).first()
         # student.id=data['sid']
         student.name=data['name']
         student.clas=data['clas']
@@ -87,17 +93,16 @@ class SMS(db.Model):
     @staticmethod
     @marshal_with(studentFields)
     def delete_student_by_id(sid):
-        student=SMS.query.filter_by(sid=sid).first()
+        student=Student.query.filter_by(sid=sid).first()
         db.session.delete(student)
         db.session.commit()
-        students=SMS.query.all()
+        students=Student.query.all()
         
         return students
     
-    @marshal_with(studentFields)
-    def search_student_by_name(name):
-        students=SMS.query.filter(SMS.name.ilike(f"%{name}%")).all()
-        return students
+    # @marshal_with(studentFields)
+    # def search_student_by_name(name):
+        
     
     
     
