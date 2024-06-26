@@ -36,6 +36,9 @@ v1_blueprints.add_url_rule(
     '/log/audit', view_func=AuditView.list, methods=['GET'])
 v1_blueprints.add_url_rule(
     '/log/audit-detail', view_func=AuditView.details, methods=['GET'])
+
+v1_blueprints.add_url_rule(
+    '/student/login', view_func=StudentView.login_student, methods=['POST'])
 v1_blueprints.add_url_rule(
     '/student/get', view_func=StudentView.get_students, methods=['GET'])
 v1_blueprints.add_url_rule(

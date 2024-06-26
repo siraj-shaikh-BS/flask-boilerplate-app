@@ -18,6 +18,7 @@ from app.models.student import Student
 from flask import request
 from flask.views import View
 import jwt
+# from flask_jwt_extended import create_access_token
 from werkzeug.security import check_password_hash
 
 
@@ -25,6 +26,30 @@ class StudentView(View):
     """
     Contains all student related functions
     """
+    
+    def create_auth_response(self,student:Student):
+        """Returns student details and access token
+        """
+        
+        token=jwt.encode({
+            'id':student.sid,
+            'exp':datetime.utcnow()+timedelta(days=60)
+        }, key=config_data.get('SECRET_KEY'))
+        
+        student_details={
+                'sid':student.sid,
+                'name':student.name,
+                'clas':student.clas,
+                'division':student.division,
+                'email':student.email,
+                'password':student.password
+        }
+        student.auth_token=token
+        db.session.commit()
+        
+        response={'token':token,'details':student_details,'message':"Successfully login"}
+        return response
+    
     @staticmethod
     @api_time_logger
     def get_students():
@@ -69,14 +94,26 @@ class StudentView(View):
         Students_data=Student.get_student()
         return Students_data
     
+    @staticmethod
+    @api_time_logger
+    def login_student():
+        data=request.json
+        email=data['email']
+        password=data['password']
+        
+        
+        if not email or not password:
+            return {'message':'Missing email or password'}
+        student=Student.query.filter_by(email=email).first()
+        
+        if student and student.password==password:
+            return StudentView().create_auth_response(student=student)
+        else:
+            return {'message':"Invalid email or password"}
+        
+            
     
-    # @staticmethod
-    # @api_time_logger
-    # def search_student():
-    #     data=request.args
-    #     query=SMS.search_student_by_name(name=data['name'])
-    #     data=SMS.serialize_student(details=query)
-    #     return data
+    
 
         
 

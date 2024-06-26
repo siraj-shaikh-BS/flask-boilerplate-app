@@ -16,6 +16,7 @@ studentFields={
     'sid':fields.Integer,
     'name':fields.String,
     'clas':fields.Integer,
+    'email':fields.String,
     'division':fields.String
 }    
 
@@ -24,10 +25,13 @@ class Student(db.Model):
     sid=db.Column(db.Integer,primary_key=True,autoincrement=True)
     name=db.Column(db.String,nullable=False)
     clas=db.Column(db.Integer,nullable=False)
+    email = db.Column(db.String, nullable=False, unique=True)
+    password = db.Column(db.String, nullable=True)
+    auth_token=db.Column(db.String,nullable=True)
     division=db.Column(db.String,nullable=False)
 
     def __repr__(self):
-        return f"{self.name}:{self.clas}-{self.division}"
+        return f"{self.name}:{self.clas}-{self.division}-{self.email}-{self.password}"
     
     
     @staticmethod
@@ -45,7 +49,7 @@ class Student(db.Model):
     @marshal_with(studentFields)
     def add_student():
         data=request.json
-        student=Student(name=data['name'],clas=data['clas'],division=data['division'])
+        student=Student(name=data['name'],clas=data['clas'],division=data['division'],email=data['email'],password=data['password'])
         db.session.add(student)
         db.session.commit()
         
@@ -63,6 +67,8 @@ class Student(db.Model):
                 'name':single_data['name'],
                 'clas':single_data['clas'],
                 'division':single_data['division'],
+                'email':single_data['email'],
+                'password':single_data['password']
             }
             
             data.append(single_data_obj)
@@ -85,6 +91,8 @@ class Student(db.Model):
         student.name=data['name']
         student.clas=data['clas']
         student.division=data['division']
+        student.email=data['email']
+        student.password=data['password']
         db.session.commit()
         
         return student
@@ -99,9 +107,7 @@ class Student(db.Model):
         students=Student.query.all()
         
         return students
-    
-    # @marshal_with(studentFields)
-    # def search_student_by_name(name):
+
         
     
     
