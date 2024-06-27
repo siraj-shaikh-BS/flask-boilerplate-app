@@ -9,7 +9,7 @@ from app import logger
 from app.helpers.constants import HttpStatusCode
 from app.helpers.constants import ResponseMessageKeys
 from app.helpers.decorators import api_time_logger
-from app.helpers.decorators import token_required
+from app.helpers.decorators import token_required_student
 from app.helpers.utility import field_type_validator
 from app.helpers.utility import get_pagination_meta
 from app.helpers.utility import required_validator
@@ -83,9 +83,26 @@ class StudentView(View):
     
     @staticmethod
     @api_time_logger
-    def update_student_by_id(sid):
-        updated_student=Student.update_student_by_id(sid)
-        return updated_student
+    @token_required_student
+    def update_student_by_id(current_student,sid):
+        # updated_student=Student.update_student_by_id(sid)
+        # return updated_student
+        data=request.json
+        student = Student.query.filter_by(sid=sid).first()
+        if not student:
+            return {'message': 'Student not found'}, 404
+
+        if current_student.sid != student.sid:
+            return {'message': 'You can only update your own information'}, 403
+
+        # Update the student information
+        student=Student.update_student_by_id(student.sid)
+        if 'password' in data:
+            student.password = data['password']
+
+        db.session.commit()
+        students=Student.get_student_by_id(sid=sid)
+        return students
     
     @staticmethod
     @api_time_logger
