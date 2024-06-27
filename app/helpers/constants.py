@@ -63,6 +63,8 @@ class ResponseMessageKeys(enum.Enum):
     INVALID_PASSWORD = 'Invalid password.'
     USER_NOT_EXIST = 'Entered Email ID is not registered with us.'
     EMAIL_DETAILS_NOT_FOUND = 'Entered Email ID is not registered with us.'
+    EMAIL_ALREADY_EXISTS='Email already exists.'
+    
 
 
 SupportedFileTypes = {  # Contains all the supported file types.

@@ -42,12 +42,12 @@ v1_blueprints.add_url_rule(
 v1_blueprints.add_url_rule(
     '/student/get', view_func=StudentView.get_students, methods=['GET'])
 v1_blueprints.add_url_rule(
-    '/student/get/<int:sid>', view_func=StudentView.get_student_by_id, methods=['GET'])
+    '/student/get/<int:id>', view_func=StudentView.get_student_by_id, methods=['GET'])
 v1_blueprints.add_url_rule(
-    '/student/post', view_func=StudentView.add_students, methods=['POST'])
+    '/student/add', view_func=StudentView.add_students, methods=['POST'])
 v1_blueprints.add_url_rule(
-    '/student/put/<int:sid>', view_func=StudentView.update_student_by_id, methods=['PUT'])
+    '/student/update', view_func=StudentView.update_student_by_id, methods=['PUT'])
 v1_blueprints.add_url_rule(
-    '/student/delete/<int:sid>', view_func=StudentView.delete_student_by_id, methods=['DELETE'])
+    '/student/delete/<int:id>', view_func=StudentView.delete_student_by_id, methods=['DELETE'])
 # v1_blueprints.add_url_rule(
 #     '/student/get/', view_func=StudentView.get_student_by_id, methods=['GET'])

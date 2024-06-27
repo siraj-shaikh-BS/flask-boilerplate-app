@@ -32,12 +32,12 @@ class StudentView(View):
         """
         
         token=jwt.encode({
-            'id':student.sid,
+            'id':student.id,
             'exp':datetime.utcnow()+timedelta(days=60)
         }, key=config_data.get('SECRET_KEY'))
         
         student_details={
-                'sid':student.sid,
+                'id':student.id,
                 'name':student.name,
                 'clas':student.clas,
                 'division':student.division,
@@ -47,67 +47,111 @@ class StudentView(View):
         student.auth_token=token
         db.session.commit()
         
-        response={'token':token,'details':student_details,'message':"Successfully login"}
+        response={'token':token,'student':student_details,'message':"Successfully login"}
         return response
     
     @staticmethod
     @api_time_logger
     def get_students():
         name = request.args.get('name')
-        # Students_data=SMS.get_student()
-        # data=SMS.serialize_student(details=Students_data)
+        # StudentV1s_data=SMS.get_student()
+        # data=SMS.serialize_student(details=StudentV1s_data)
         if name:
             students = Student.get_student(name)
         else:
             students=Student.get_student()
         return students
-        # return Students_data
+        # return StudentV1s_data
+
 
     @staticmethod
     @api_time_logger
     def add_students():
         
-        students_add=Student.add_student()
-        return students_add
+        try:
+            data = request.json
+            required_fields = ["name", "clas", "division", "email", "password"]
+
+            for field in required_fields:
+                if field not in data or not data[field]:
+                    message=f'Missing or empty field :{field}'
+                    return send_json_response(http_status=HttpStatusCode.BAD_REQUEST.value,response_status=False,
+                                                    message_key=message,
+                                                    data=None)
+                    # print(f"Missing or empty field: {field}")
+                    # return {'message': f'Missing or empty field: {field}'}, 400
+
+
+            
+            existing_student = Student.query.filter_by(email=data['email']).first()
+            if existing_student:
+                return send_json_response(http_status=HttpStatusCode.BAD_REQUEST.value,
+                                        response_status=False,
+                                        message_key=ResponseMessageKeys.EMAIL_ALREADY_EXISTS.value,data=None)
+
+            
+
+            student = Student(
+                name=data['name'],
+                clas=data['clas'],
+                division=data['division'],
+                email=data['email'],
+                password=data['password']
+            )
+            db.session.add(student)
+            db.session.commit()
+
+            # Query the newly added student by email
+            student_data = Student.query.filter_by(email=data['email']).first()
+            # print("Newly added student data:", student_data)
+            return send_json_response(http_status=HttpStatusCode.OK.value,
+                                    response_status=True,
+                                    message_key=ResponseMessageKeys.SUCCESS.value,
+                                    data=dict(student_data))
+        except Exception as e:
+            error_message=str(e)
+            return send_json_response(http_status=HttpStatusCode.INTERNAL_SERVER_ERROR.value,
+                                      response_status=False,
+                                      message_key=ResponseMessageKeys.FAILED.value,
+                                      error=error_message)
+
     
     ## Get student by id
     @staticmethod
     @api_time_logger
-    def get_student_by_id(sid):
+    def get_student_by_id(id):
         
 
-        Student_data=Student.get_student_by_id(sid)  
-        return Student_data
+        StudentV1_data=Student.get_student_by_id(id)  
+        return StudentV1_data
         # return Student_data
     
     
     @staticmethod
     @api_time_logger
     @token_required_student
-    def update_student_by_id(current_student,sid):
-        # updated_student=Student.update_student_by_id(sid)
-        # return updated_student
+    def update_student_by_id(current_student,id):
         data=request.json
-        student = Student.query.filter_by(sid=sid).first()
+        student = Student.query.filter_by(id=id).first()
         if not student:
             return {'message': 'Student not found'}, 404
 
-        if current_student.sid != student.sid:
+        if current_student.id != student.id:
             return {'message': 'You can only update your own information'}, 403
 
         # Update the student information
-        student=Student.update_student_by_id(student.sid)
+        student=Student.update_student_by_id(student.id)
         if 'password' in data:
             student.password = data['password']
 
         db.session.commit()
-        students=Student.get_student_by_id(sid=sid)
+        students=Student.get_student_by_id(id=id)
         return students
     
     @staticmethod
     @api_time_logger
-    def delete_student_by_id(sid):
-        deleted_student=Student.delete_student_by_id(sid)
+    def delete_student_by_id(id):
+        deleted_student=Student.delete_student_by_id(id)
         Students_data=Student.get_student()
         return Students_data
     

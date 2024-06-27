@@ -180,6 +180,19 @@ def send_json_response(http_status: int, response_status: bool, message_key: str
     else:
         return jsonify({'status': response_status, 'message': message_key, 'error': error}), http_status
 
+# def send_json_response_student(http_status: int, response_status: bool, message_key: str, data: dict = None, error: dict = None) -> tuple:
+#     """This function sends a JSON response with structured format."""
+#     response = {
+#         'status': response_status,
+#         'message': message_key
+#     }
+#     if data is not None:
+#         response['student'] = data
+#     if error is not None:
+#         response['error'] = error
+
+#     return jsonify(response), http_status
+
 
 def get_pagination_meta(current_page: int, page_size: int, total_items: int) -> dict:
     """
