@@ -9,10 +9,33 @@ from app.helpers.constants import HttpStatusCode
 from app.helpers.constants import ResponseMessageKeys
 from app.helpers.utility import send_json_response
 from app.models.user import User
+from app.models.student import Student
+
 from flask import g
 from flask import request
 import jwt
 
+def token_required_student(f:Callable):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        if 'x-access-token' in request.headers:
+            token = request.headers['x-access-token']
+        if not token:
+            return {'message': 'Token is missing!'}, 401
+        try:
+            data = jwt.decode(token, config_data.get('SECRET_KEY'), algorithms=["HS256"])
+            current_student = Student.query \
+                .filter_by(id=data['id']) \
+                .first()
+
+        except:
+            return {'message': 'Token is invalid!'}, 401
+        
+        request.student_id = current_student.id
+        return f(current_student, *args, **kwargs)
+        # return f(current_student, *args, **kwargs)
+    return decorated
 
 def token_required(f: Callable) -> Callable:  # type: ignore  # noqa: C901
     """To check request contains valid token.

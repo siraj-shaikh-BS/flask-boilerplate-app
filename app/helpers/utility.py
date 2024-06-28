@@ -181,6 +181,8 @@ def send_json_response(http_status: int, response_status: bool, message_key: str
         return jsonify({'status': response_status, 'message': message_key, 'error': error}), http_status
 
 
+
+
 def get_pagination_meta(current_page: int, page_size: int, total_items: int) -> dict:
     """
         This method generates pagination metadata.

@@ -190,12 +190,3 @@ class AuditView(View):
                                       message_key=ResponseMessageKeys.EMAIL_DETAILS_NOT_FOUND.value, data=None, error=None)
         return send_json_response(http_status=HttpStatusCode.OK.value, response_status=True,
                                   message_key=ResponseMessageKeys.SUCCESS.value, data={'api_log_data': data_dict}, error=None)
-
-
-from flask_restful import Resource,Api
-
-class HelloWorld(Resource):
-    def get():
-        
-        print(111111111111)
-        return {'message': 'Hello, World!'}

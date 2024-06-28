@@ -2,7 +2,7 @@
 from app.views.common_view import AuditView
 from app.views.common_view import FileView
 from app.views.user_view import UserView
-from app.views.student_view import StudentsView,StudentView
+from app.views.student_view import StudentView
 from flask import Blueprint
 from flask import g
 from flask import request
@@ -36,13 +36,18 @@ v1_blueprints.add_url_rule(
     '/log/audit', view_func=AuditView.list, methods=['GET'])
 v1_blueprints.add_url_rule(
     '/log/audit-detail', view_func=AuditView.details, methods=['GET'])
+
 v1_blueprints.add_url_rule(
-    '/get', view_func=StudentsView.get_students, methods=['GET'])
+    '/student/login', view_func=StudentView.login_student, methods=['POST'])
 v1_blueprints.add_url_rule(
-    '/get/<int:sid>', view_func=StudentsView.get_student_by_id, methods=['GET'])
+    '/student/get', view_func=StudentView.get_students, methods=['GET'])
 v1_blueprints.add_url_rule(
-    '/post', view_func=StudentsView.add_student, methods=['POST'])
+    '/student/get/<int:id>', view_func=StudentView.get_student_by_id, methods=['GET'])
 v1_blueprints.add_url_rule(
-    '/put/<int:sid>', view_func=StudentsView.update_student_by_id, methods=['PUT'])
+    '/student/add', view_func=StudentView.add_students, methods=['POST'])
 v1_blueprints.add_url_rule(
-    '/delete/<int:sid>', view_func=StudentsView.delete_student_by_id, methods=['DELETE'])
+    '/student/update', view_func=StudentView.update_student_by_token, methods=['PUT'])
+v1_blueprints.add_url_rule(
+    '/student/delete/<int:id>', view_func=StudentView.delete_student_by_id, methods=['DELETE'])
+# v1_blueprints.add_url_rule(
+#     '/student/get/', view_func=StudentView.get_student_by_id, methods=['GET'])
