@@ -18,6 +18,7 @@ from app.models.student import Student
 from flask import request
 from flask.views import View
 import jwt
+import re
 # from flask_jwt_extended import create_access_token
 from werkzeug.security import check_password_hash
 
@@ -48,14 +49,15 @@ class StudentView(View):
         db.session.commit()
         
         response={'token':token,'student':student_details,'message':"Successfully login"}
-        return response
+        return send_json_response(http_status=HttpStatusCode.OK.value,response_status=True,
+                                                    message_key=ResponseMessageKeys.SUCCESS,
+                                                    data=response)
+        # return response
     
     @staticmethod
     @api_time_logger
     def get_students():
         name = request.args.get('name')
-        # StudentV1s_data=SMS.get_student()
-        # data=SMS.serialize_student(details=StudentV1s_data)
         if name:
             students = Student.get_student(name)
         else:
@@ -71,15 +73,23 @@ class StudentView(View):
         try:
             data = request.json
             required_fields = ["name", "clas", "division", "email", "password"]
-
+    
             for field in required_fields:
                 if field not in data or not data[field]:
-                    message=f'Missing or empty field :{field}'
+                    message=f'Missing or empty field :{field.upper()}'
                     return send_json_response(http_status=HttpStatusCode.BAD_REQUEST.value,response_status=False,
                                                     message_key=message,
                                                     data=None)
-                    # print(f"Missing or empty field: {field}")
-                    # return {'message': f'Missing or empty field: {field}'}, 400
+                    
+            password = data['password']
+            if not re.match(r'^(?=.*[a-zA-Z])(?=.*[0-9])[A-Za-z0-9]{8,}$', password):
+                message = 'Password must be at least 8 alphanumeric characters'
+                return send_json_response(
+                http_status=HttpStatusCode.BAD_REQUEST.value,
+                response_status=False,
+                message_key=message,
+                data=None
+                )        
 
 
             
@@ -101,13 +111,13 @@ class StudentView(View):
             db.session.add(student)
             db.session.commit()
 
-            # Query the newly added student by email
-            student_data = Student.query.filter_by(email=data['email']).first()
+    
+            student_data=student.to_dict()
             # print("Newly added student data:", student_data)
             return send_json_response(http_status=HttpStatusCode.OK.value,
                                     response_status=True,
-                                    message_key=ResponseMessageKeys.SUCCESS.value,
-                                    data=dict(student_data))
+                                    message_key=ResponseMessageKeys.STUDENT_ADDED.value,
+                                    data=student_data)
         except Exception as e:
             error_message=str(e)
             return send_json_response(http_status=HttpStatusCode.INTERNAL_SERVER_ERROR.value,
@@ -130,30 +140,66 @@ class StudentView(View):
     @staticmethod
     @api_time_logger
     @token_required_student
-    def update_student_by_id(current_student,id):
+    def update_student_by_token(current_student):
         data=request.json
-        student = Student.query.filter_by(id=id).first()
+        student = Student.query.filter_by(id=current_student.id).first()
+        student=Student.to_dict(student)
         if not student:
-            return {'message': 'Student not found'}, 404
+            
+            return send_json_response(http_status=HttpStatusCode.BAD_REQUEST.value, response_status=True,
+                                  message_key=ResponseMessageKeys.USER_NOT_EXIST.value, data=None)
+            # return {'message': 'Student not found'}, 404
 
-        if current_student.id != student.id:
-            return {'message': 'You can only update your own information'}, 403
+        if current_student.id != student["id"]:
+            return send_json_response(http_status=HttpStatusCode.BAD_REQUEST.value, response_status=True,
+                                  message_key=ResponseMessageKeys.STUDENT_UPDATE_OTHER_DETAILS.value, data=None)
+            # return {'message': 'You can only update your own information'}, 403
 
         # Update the student information
-        student=Student.update_student_by_id(student.id)
+        student["name"] = data.get('name', student["name"])
+        student["clas"] = data.get('clas', student["clas"])
+        student["division"] = data.get('division', student["division"])
+        student["email"] = data.get('email', student["email"])
         if 'password' in data:
             student.password = data['password']
 
         db.session.commit()
-        students=Student.get_student_by_id(id=id)
-        return students
+        return send_json_response(http_status=HttpStatusCode.OK.value, response_status=True,
+                                  message_key=ResponseMessageKeys.SUCCESS.value, data=student)
+        
     
+    # @staticmethod
+    # @api_time_logger
+    # def delete_student_by_id(id):
+    #     deleted_student=Student.delete_student_by_id(id)
+    #     if 
+    #     Students_data=Student.get_student()
+    #     return Students_data
     @staticmethod
     @api_time_logger
     def delete_student_by_id(id):
-        deleted_student=Student.delete_student_by_id(id)
-        Students_data=Student.get_student()
-        return Students_data
+        student = Student.query.filter_by(id=id).first()
+        if not student:
+            return send_json_response(
+                http_status=HttpStatusCode.BAD_REQUEST.value,
+                response_status=False,
+                message_key=ResponseMessageKeys.STUDENT_NOT_EXIST.value,
+                data=None
+            )
+        else:
+            db.session.delete(student)
+            db.session.commit()
+            
+            remaining_students = Student.query.all()
+            serialized_students = [student.to_dict() for student in remaining_students]
+            
+            return send_json_response(
+                http_status=HttpStatusCode.OK.value,
+                response_status=True,
+                message_key=ResponseMessageKeys.SUCCESS.value,
+                data=serialized_students
+            )
+
     
     @staticmethod
     @api_time_logger
@@ -164,13 +210,17 @@ class StudentView(View):
         
         
         if not email or not password:
-            return {'message':'Missing email or password'}
+            return send_json_response(http_status=HttpStatusCode.BAD_REQUEST.value, response_status=True,
+                                  message_key=ResponseMessageKeys.STUDENT_DETAILS_MISSING.value, data=None)
+            # return {'message':'Missing email or password'}
         student=Student.query.filter_by(email=email).first()
         
         if student and student.password==password:
             return StudentView().create_auth_response(student=student)
         else:
-            return {'message':"Invalid email or password"}
+            return send_json_response(http_status=HttpStatusCode.BAD_REQUEST.value, response_status=True,
+                                  message_key=ResponseMessageKeys.INVALID_EMAIL_PASSWORD.value, data=None)
+            # return {'message':"Invalid email or password"}
         
             
     

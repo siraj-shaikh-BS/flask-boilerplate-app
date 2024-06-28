@@ -25,11 +25,14 @@ def token_required_student(f:Callable):
             return {'message': 'Token is missing!'}, 401
         try:
             data = jwt.decode(token, config_data.get('SECRET_KEY'), algorithms=["HS256"])
-            current_student = Student.query.filter_by(id=data['id']).first()
+            current_student = Student.query \
+                .filter_by(id=data['id']) \
+                .first()
+
         except:
             return {'message': 'Token is invalid!'}, 401
         
-        request.id = current_student.id
+        request.student_id = current_student.id
         return f(current_student, *args, **kwargs)
         # return f(current_student, *args, **kwargs)
     return decorated

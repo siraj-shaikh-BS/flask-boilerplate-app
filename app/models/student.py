@@ -33,8 +33,7 @@ class Student(Base):
     auth_token=db.Column(db.String,nullable=True)
     division=db.Column(db.String,nullable=False)
 
-    # def __repr__(self):
-    #     return f"{self.name}:{self.clas}-{self.division}-{self.email}-{self.password}"
+
     
     
     @staticmethod
@@ -43,6 +42,7 @@ class Student(Base):
         
         if name:
             students=Student.query.filter(Student.name.ilike(f"%{name}%")).all()
+            # students=Student.to_dict(students)
         else:
             students=Student.query.all()
         return students
@@ -55,30 +55,22 @@ class Student(Base):
         try:
             response = Student.add_student()
     
-            return send_json_response(http_status=HttpStatusCode.BAD_REQUEST.value, response_status=True,
+            return send_json_response(http_status=HttpStatusCode.OK.value, response_status=True,
                                   message_key=ResponseMessageKeys.SUCCESS.value, data=dict(response))
         except Exception as e:
-            return send_json_response(http_status=500,response_status=False,message_key=ResponseMessageKeys.EMAIL_ALREADY_EXISTS.value,data=None, error=str(e))
+            return send_json_response(http_status=HttpStatusCode.BAD_REQUEST.value,response_status=False,message_key=ResponseMessageKeys.EMAIL_ALREADY_EXISTS.value,data=None, error=str(e))
 
 
-    
-    @classmethod
-    def serialize_student(cls,details):
-        data=[]
-        for single_data in details:
-            single_data=dict(single_data)
-            single_data_obj={
-                'id':single_data['id'],
-                'name':single_data['name'],
-                'clas':single_data['clas'],
-                'division':single_data['division'],
-                'email':single_data['email'],
-                'password':single_data['password']
-            }
-            
-            data.append(single_data_obj)
-        return data
         
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'clas': self.clas,
+            'division': self.division,
+            'email': self.email,
+            'password': self.password
+        }    
     
     @staticmethod
     @marshal_with(studentFields)
@@ -91,27 +83,30 @@ class Student(Base):
     @marshal_with(studentFields)
     def update_student_by_id(id):
         data=request.json
-        student=Student.query.filter_by(id=id).first()
+        updated_student = Student.query.filter_by(id=id).first()
+        if not updated_student:
+            return send_json_response(
+            http_status=HttpStatusCode.BAD_REQUEST.value,
+            response_status=False,
+            message_key=ResponseMessageKeys.USER_NOT_EXIST.value,
+            data=None
+            )
         # student.id=data['id']
-        student.name=data['name']
-        student.clas=data['clas']
-        student.division=data['division']
-        student.email=data['email']
-        student.password=data['password']
+        updated_student.name=data.get('name',updated_student.name)
+        updated_student.clas=data.get('clas',updated_student.clas)
+        updated_student.division=data.get('division',updated_student.division)
+        updated_student.email=data.get('email',updated_student.email)
+        # updated_student.password=data['password']
         db.session.commit()
         
-        return student
+        return updated_student
         
     
-    @staticmethod
-    @marshal_with(studentFields)
-    def delete_student_by_id(id):
-        student=Student.query.filter_by(id=id).first()
-        db.session.delete(student)
-        db.session.commit()
-        students=Student.query.all()
-        
-        return students
+    # @staticmethod
+    # @marshal_with(studentFields)
+    # def delete_student_by_id(id):
+    #     student=Student.delete_student_by_id(id)
+    #     return student
 
         
     
