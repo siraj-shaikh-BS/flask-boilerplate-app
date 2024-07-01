@@ -20,7 +20,7 @@ from flask.views import View
 import jwt
 import re
 # from flask_jwt_extended import create_access_token
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash,generate_password_hash
 
 
 class StudentView(View):
@@ -50,20 +50,39 @@ class StudentView(View):
         
         response={'token':token,'student':student_details,'message':"Successfully login"}
         return send_json_response(http_status=HttpStatusCode.OK.value,response_status=True,
-                                                    message_key=ResponseMessageKeys.SUCCESS,
+                                                    message_key=ResponseMessageKeys.SUCCESS.value,
                                                     data=response)
         # return response
     
     @staticmethod
     @api_time_logger
     def get_students():
+        # import pdb;pdb.set_trace()
         name = request.args.get('name')
-        if name:
-            students = Student.get_student(name)
-        else:
-            students=Student.get_student()
-        return students
-        # return StudentV1s_data
+        page = request.args.get('page')
+        size = request.args.get('size')
+        sort = request.args.get('sort')
+        
+        
+        students=Student.get_student(name=name,page=page,size=size,sort=sort)
+        total_count=Student.count(name=name)
+        
+        
+        
+        student_data=Student.serialize_student(students)
+        pagination_meta=get_pagination_meta(
+            current_page=1 if page is None else int(page),
+            page_size=int(size) if size else len(students),
+            total_items=int(total_count)
+        )
+        data={
+            'result':student_data,
+            'pagination_metadata':pagination_meta
+        }
+        return send_json_response(http_status=HttpStatusCode.OK.value, response_status=True,
+                              message_key=ResponseMessageKeys.SUCCESS.value, data=data,
+                              error=None)
+        
 
 
     @staticmethod
@@ -100,7 +119,6 @@ class StudentView(View):
                                         message_key=ResponseMessageKeys.EMAIL_ALREADY_EXISTS.value,data=None)
 
             
-
             student = Student(
                 name=data['name'],
                 clas=data['clas'],
@@ -113,6 +131,7 @@ class StudentView(View):
 
     
             student_data=student.to_dict()
+
             # print("Newly added student data:", student_data)
             return send_json_response(http_status=HttpStatusCode.OK.value,
                                     response_status=True,
@@ -167,14 +186,45 @@ class StudentView(View):
         return send_json_response(http_status=HttpStatusCode.OK.value, response_status=True,
                                   message_key=ResponseMessageKeys.SUCCESS.value, data=student)
         
-    
-    # @staticmethod
-    # @api_time_logger
-    # def delete_student_by_id(id):
-    #     deleted_student=Student.delete_student_by_id(id)
-    #     if 
-    #     Students_data=Student.get_student()
-    #     return Students_data
+    @staticmethod
+    @api_time_logger
+    @token_required_student 
+    def change_password(current_student):
+        # student=Student.query.filter_by(email=email).first()
+        data=request.get_json()
+        # email=data.get('email')
+        old_password=data.get('old_password')
+        new_password=data.get('new_password')
+        
+        if not old_password or not new_password:
+            return send_json_response(http_status=HttpStatusCode.BAD_REQUEST.value,
+                                      response_status=False,
+                                      message_key=ResponseMessageKeys.EMAIL_PASS_REQUIRED.value,
+                                      data=None)
+        # import pdb; pdb.set_trace()
+        if current_student.password!=old_password:
+            return send_json_response(http_status=HttpStatusCode.UNAUTHORIZED.value,
+                                      response_status=False,
+                                      message_key=ResponseMessageKeys.INVALID_REQUEST.value,
+                                      data=None)
+        
+        current_student.password=new_password
+        
+        db.session.commit()
+        
+        # To get student data
+        student_data=Student.query.filter_by(email=current_student.email).first()
+        student_data=Student.serialize_student(student_data)
+        # data={'data':student_data}
+        return send_json_response(http_status=HttpStatusCode.OK.value,
+                                  response_status=True,
+                                  message_key=ResponseMessageKeys.SUCCESS.value,
+                                  data=student_data)
+        
+        
+        
+        
+        
     @staticmethod
     @api_time_logger
     def delete_student_by_id(id):
@@ -210,7 +260,7 @@ class StudentView(View):
         
         
         if not email or not password:
-            return send_json_response(http_status=HttpStatusCode.BAD_REQUEST.value, response_status=True,
+            return send_json_response(http_status=HttpStatusCode.BAD_REQUEST.value, response_status=False,
                                   message_key=ResponseMessageKeys.STUDENT_DETAILS_MISSING.value, data=None)
             # return {'message':'Missing email or password'}
         student=Student.query.filter_by(email=email).first()

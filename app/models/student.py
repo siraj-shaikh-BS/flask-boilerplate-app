@@ -19,6 +19,8 @@ studentFields={
     'name':fields.String,
     'clas':fields.Integer,
     'email':fields.String,
+    'password':fields.String,
+    'deleted_at':fields.DateTime,
     'division':fields.String
 }    
 
@@ -32,21 +34,34 @@ class Student(Base):
     password = db.Column(db.String, nullable=True)
     auth_token=db.Column(db.String,nullable=True)
     division=db.Column(db.String,nullable=False)
-
+    deleted_at = db.Column(db.DateTime)
 
     
     
     @staticmethod
     @marshal_with(studentFields)
-    def get_student(name=None):
-        
+    def get_student(name=None,page=None,size=None,sort=None):
+        query=Student.query    
         if name:
-            students=Student.query.filter(Student.name.ilike(f"%{name}%")).all()
-            # students=Student.to_dict(students)
+            query=query.filter(Student.name.ilike(f"%{name}%"))
+        
+        if sort:
+            query=query.order_by(sort)
+        
+        if page and size:
+            pagination=query.paginate(page=int(page),per_page=int(size),error_out=False)
+            return pagination.items
+            
         else:
-            students=Student.query.all()
-        return students
+            return query.all()
         # return students
+    
+    @staticmethod
+    def count(name=None):
+        query = Student.query
+        if name:
+            query = query.filter(Student.name.ilike(f"%{name}%"))
+        return query.count()
     
     @staticmethod
     @marshal_with(studentFields)
@@ -69,8 +84,14 @@ class Student(Base):
             'clas': self.clas,
             'division': self.division,
             'email': self.email,
-            'password': self.password
+            'password': self.password,
+            'deleted_at':self.deleted_at
         }    
+        
+    @staticmethod
+    @marshal_with(studentFields)
+    def serialize_student(student_list):
+        return student_list
     
     @staticmethod
     @marshal_with(studentFields)
